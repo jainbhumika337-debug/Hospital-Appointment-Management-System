@@ -1,0 +1,631 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #1e293b;
+        }
+
+        header {
+            background: #123b66;
+            color: white;
+            padding: 24px 5%;
+        }
+
+        header h1 { margin: 0 0 8px; }
+        header p { margin: 0; color: #dbeafe; }
+
+        main {
+            max-width: 1200px;
+            margin: 28px auto;
+            padding: 0 20px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 26px;
+        }
+
+        .card, .panel {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 14px #0f172a0d;
+        }
+
+        .card h3 {
+            margin: 0 0 12px;
+            color: #64748b;
+            font-size: 15px;
+        }
+
+        .number {
+            font-size: 30px;
+            font-weight: bold;
+            color: #123b66;
+        }
+
+        .panel {
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .panel h2 { margin-top: 0; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th { background: #eff6ff; }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px;
+            margin-top: 7px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+            padding: 11px 16px;
+            border-radius: 7px;
+            background: #1769aa;
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        button:hover { background: #0f4f86; }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .cancel-btn { background: #b91c1c; }
+        .cancel-btn:hover { background: #991b1b; }
+
+        .status { font-weight: bold; }
+        .booked { color: #15803d; }
+        .cancelled { color: #b91c1c; }
+        .completed { color: #1769aa; }
+
+        .message {
+            margin: 12px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .filter-bar {
+            max-width: 300px;
+            margin-bottom: 18px;
+        }
+
+        .filter-bar label { margin-top: 0; }
+
+        .empty-row {
+            text-align: center;
+            color: #64748b;
+            padding: 22px;
+        }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            padding: 20px;
+        }
+
+        @media (max-width: 600px) {
+            header { padding: 20px; }
+            main { padding: 0 12px; margin-top: 16px; }
+            .card, .panel { padding: 16px; }
+            .number { font-size: 25px; }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>Hospital Management System</h1>
+    <p>Patient Care · Doctor Directory · Appointment Management</p>
+</header>
+
+<main>
+    <div id="message" class="message" role="status">
+        Connecting to database...
+    </div>
+
+    <section class="cards">
+        <div class="card">
+            <h3>Total Departments</h3>
+            <div class="number" id="departmentCount">—</div>
+        </div>
+        <div class="card">
+            <h3>Total Doctors</h3>
+            <div class="number" id="doctorCount">—</div>
+        </div>
+        <div class="card">
+            <h3>Total Patients</h3>
+            <div class="number" id="patientCount">—</div>
+        </div>
+        <div class="card">
+            <h3>Total Appointments</h3>
+            <div class="number" id="appointmentCount">—</div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Book New Appointment</h2>
+
+        <form id="bookingForm">
+            <label for="patientId">Patient *</label>
+            <select id="patientId" required>
+                <option value="">Select Patient</option>
+            </select>
+
+            <label for="doctorId">Doctor *</label>
+            <select id="doctorId" required>
+                <option value="">Select Doctor</option>
+            </select>
+
+            <label for="appointmentDate">Appointment Date *</label>
+            <input id="appointmentDate" type="date" required>
+
+            <label for="appointmentTime">Appointment Time *</label>
+            <input id="appointmentTime" type="time" required>
+
+            <label for="reason">Reason for Visit</label>
+            <input id="reason" type="text" maxlength="300"
+                   placeholder="Enter reason for visit">
+
+            <button id="bookButton" type="submit">
+                Book Appointment
+            </button>
+        </form>
+
+        <p id="bookingMessage" class="message" role="status"></p>
+    </section>
+
+    <section class="panel">
+        <h2>Doctor Directory</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Doctor</th>
+                    <th>Specialization</th>
+                    <th>Department</th>
+                    <th>Consultation Fee</th>
+                </tr>
+            </thead>
+            <tbody id="doctorRows"></tbody>
+        </table>
+    </section>
+
+    <section class="panel">
+        <h2>Patient Records</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient Name</th>
+                    <th>Gender</th>
+                    <th>Phone</th>
+                </tr>
+            </thead>
+            <tbody id="patientRows"></tbody>
+        </table>
+    </section>
+
+    <section class="panel">
+        <h2>Appointment Management</h2>
+
+        <div class="filter-bar">
+            <label for="statusFilter">Filter by Status</label>
+            <select id="statusFilter">
+                <option value="ALL">All Appointments</option>
+                <option value="BOOKED">Booked</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="COMPLETED">Completed</option>
+            </select>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="appointmentRows"></tbody>
+        </table>
+    </section>
+</main>
+
+<footer>
+    Hospital Management System · Oracle Database · PL/SQL · Flask
+</footer>
+
+<script>
+"use strict";
+
+const API = "http://127.0.0.1:5000";
+
+let allAppointments = [];
+
+async function getData(path) {
+    const response = await fetch(API + path);
+
+    if (!response.ok) {
+        throw new Error("Failed to load " + path);
+    }
+
+    return response.json();
+}
+
+function createCell(value) {
+    const td = document.createElement("td");
+    td.textContent = value ?? "—";
+    return td;
+}
+
+function addRow(tbody, values) {
+    const tr = document.createElement("tr");
+
+    values.forEach(value => {
+        tr.appendChild(createCell(value));
+    });
+
+    tbody.appendChild(tr);
+    return tr;
+}
+
+async function loadBookingOptions() {
+    const [patients, doctors] = await Promise.all([
+        getData("/api/patients"),
+        getData("/api/doctors")
+    ]);
+
+    const patientSelect = document.getElementById("patientId");
+    const doctorSelect = document.getElementById("doctorId");
+
+    patientSelect.replaceChildren(new Option("Select Patient", ""));
+    doctorSelect.replaceChildren(new Option("Select Doctor", ""));
+
+    patients.forEach(patient => {
+        patientSelect.add(new Option(
+            `${patient.patient_name} (ID: ${patient.patient_id})`,
+            patient.patient_id
+        ));
+    });
+
+    doctors.forEach(doctor => {
+        doctorSelect.add(new Option(
+            `${doctor.doctor_name} - ${doctor.specialization} (₹${doctor.consultation_fee})`,
+            doctor.doctor_id
+        ));
+    });
+}
+
+
+function renderAppointments() {
+    const tbody = document.getElementById("appointmentRows");
+    const filter = document.getElementById("statusFilter").value;
+
+    tbody.replaceChildren();
+
+    const filtered = filter === "ALL"
+        ? allAppointments
+        : allAppointments.filter(
+            appointment => appointment.status === filter
+        );
+
+    if (filtered.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+
+        td.colSpan = 7;
+        td.className = "empty-row";
+        td.textContent = "No appointments found for this status.";
+
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+
+    filtered.forEach(appointment => {
+        const tr = addRow(tbody, [
+            appointment.appointment_id,
+            appointment.patient_name,
+            appointment.doctor_name,
+            appointment.appointment_date,
+            appointment.appointment_time,
+            appointment.status
+        ]);
+
+        tr.cells[5].className =
+            "status " + String(appointment.status).toLowerCase();
+
+        const actionCell = document.createElement("td");
+
+        if (appointment.status === "BOOKED") {
+            const completeButton = document.createElement("button");
+            completeButton.textContent = "Complete";
+            completeButton.style.background = "#1769aa";
+            completeButton.style.marginRight = "6px";
+
+            completeButton.addEventListener("click", async () => {
+                if (!confirm(
+                    `Mark appointment #${appointment.appointment_id} as completed?`
+                )) return;
+
+                completeButton.disabled = true;
+
+                try {
+                    const response = await fetch(
+                        `${API}/api/appointments/${appointment.appointment_id}/complete`,
+                        { method: "PATCH" }
+                    );
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.message || "Could not complete appointment."
+                        );
+                    }
+
+                    alert(result.message);
+                    await loadDashboard();
+
+                } catch (error) {
+                    alert(error.message);
+                    completeButton.disabled = false;
+                }
+            });
+
+            const cancelButton = document.createElement("button");
+            cancelButton.textContent = "Cancel";
+            cancelButton.className = "cancel-btn";
+
+            cancelButton.addEventListener("click", async () => {
+                if (!confirm(
+                    `Cancel appointment #${appointment.appointment_id}?`
+                )) return;
+
+                cancelButton.disabled = true;
+
+                try {
+                    const response = await fetch(
+                        `${API}/api/appointments/${appointment.appointment_id}/cancel`,
+                        { method: "PATCH" }
+                    );
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.message || "Cancellation failed."
+                        );
+                    }
+
+                    alert(result.message);
+                    await loadDashboard();
+
+                } catch (error) {
+                    alert(error.message);
+                    cancelButton.disabled = false;
+                }
+            });
+
+            actionCell.appendChild(completeButton);
+            actionCell.appendChild(cancelButton);
+        } else {
+            actionCell.textContent = "—";
+        }
+
+        tr.appendChild(actionCell);
+    });
+}
+
+
+async function loadDashboard() {
+    const message = document.getElementById("message");
+
+    try {
+        const [departments, doctors, patients, appointments] =
+            await Promise.all([
+                getData("/api/departments"),
+                getData("/api/doctors"),
+                getData("/api/patients"),
+                getData("/api/appointments")
+            ]);
+
+        document.getElementById("departmentCount").textContent =
+            departments.length;
+        document.getElementById("doctorCount").textContent =
+            doctors.length;
+        document.getElementById("patientCount").textContent =
+            patients.length;
+        document.getElementById("appointmentCount").textContent =
+            appointments.length;
+
+        const doctorRows = document.getElementById("doctorRows");
+        doctorRows.replaceChildren();
+
+        doctors.forEach(doctor => {
+            addRow(doctorRows, [
+                doctor.doctor_name,
+                doctor.specialization,
+                doctor.department_name,
+                "₹" + Number(
+                    doctor.consultation_fee
+                ).toLocaleString("en-IN")
+            ]);
+        });
+
+        const patientRows = document.getElementById("patientRows");
+        patientRows.replaceChildren();
+
+        patients.forEach(patient => {
+            addRow(patientRows, [
+                patient.patient_id,
+                patient.patient_name,
+                patient.gender,
+                patient.phone
+            ]);
+        });
+
+        allAppointments = appointments;
+        renderAppointments();
+
+        message.textContent =
+            "Dashboard connected successfully to Oracle database.";
+        message.style.color = "#15803d";
+
+    } catch (error) {
+        message.textContent =
+            "Could not load dashboard. Check that Flask is running. " +
+            error.message;
+        message.style.color = "#b91c1c";
+    }
+}
+
+document.getElementById("statusFilter").addEventListener(
+    "change",
+    renderAppointments
+);
+
+document.getElementById("bookingForm").addEventListener(
+    "submit",
+    async event => {
+        event.preventDefault();
+
+        const message = document.getElementById("bookingMessage");
+        const button = document.getElementById("bookButton");
+
+        const payload = {
+            patient_id: Number(
+                document.getElementById("patientId").value
+            ),
+            doctor_id: Number(
+                document.getElementById("doctorId").value
+            ),
+            appointment_date:
+                document.getElementById("appointmentDate").value,
+            appointment_time:
+                document.getElementById("appointmentTime").value,
+            reason: document.getElementById("reason").value.trim()
+        };
+
+        if (
+            !payload.patient_id ||
+            !payload.doctor_id ||
+            !payload.appointment_date ||
+            !payload.appointment_time
+        ) {
+            message.textContent =
+                "Please complete all required fields.";
+            message.style.color = "#b91c1c";
+            return;
+        }
+
+        button.disabled = true;
+        message.textContent = "Booking appointment...";
+        message.style.color = "#1769aa";
+
+        try {
+            const response = await fetch(`${API}/api/appointments`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message || "Booking failed."
+                );
+            }
+
+            message.textContent =
+                `Appointment booked successfully! ID: ${result.appointment_id}`;
+            message.style.color = "#15803d";
+
+            document.getElementById("bookingForm").reset();
+
+            await loadDashboard();
+
+        } catch (error) {
+            message.textContent = error.message;
+            message.style.color = "#b91c1c";
+        } finally {
+            button.disabled = false;
+        }
+    }
+);
+
+const dateInput = document.getElementById("appointmentDate");
+
+function setMinimumDate() {
+    const now = new Date();
+    const localToday = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0")
+    ].join("-");
+
+    dateInput.min = localToday;
+}
+
+async function initializeDashboard() {
+    setMinimumDate();
+
+    try {
+        await loadBookingOptions();
+    } catch (error) {
+        const message = document.getElementById("bookingMessage");
+        message.textContent =
+            "Could not load patient/doctor options: " + error.message;
+        message.style.color = "#b91c1c";
+    }
+
+    await loadDashboard();
+}
+
+initializeDashboard();
+</script>
+</body>
+</html>
