@@ -1,5 +1,6 @@
-﻿Flask
+﻿
+Flask
 Flask-Cors
-oracledb
+psycopg[binary]
 python-dotenv
 gunicorn
